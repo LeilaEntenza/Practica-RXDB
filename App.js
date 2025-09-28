@@ -1,58 +1,169 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
-import db from './db';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { SQLiteProvider } from 'expo-sqlite';
+import UserForm from './UserForm';
+import UserList from './UserList';
 
 export default function App() {
-  const [texto, setTexto] = useState('');
-  const [items, setItems] = useState([]);
-
-  // Cargar datos cuando arranca la app
-  useEffect(() => {
-    cargarDatos();
-
-    // Suscripción para cambios en tiempo real
-    const changes = db.changes({
-      since: 'now',
-      live: true,
-      include_docs: true
-    }).on('change', cargarDatos);
-
-    return () => changes.cancel(); // Limpiar cuando se desmonta
-  }, []);
-
-  // Agregar item a la DB
-  const agregarItem = async () => {
-    if (!texto) return;
-    await db.post({ texto });
-    setTexto('');
-  };
-
-  // Obtener datos
-  const cargarDatos = async () => {
-    const result = await db.allDocs({ include_docs: true });
-    setItems(result.rows.map(row => row.doc));
-  };
-
   return (
-    <View style={styles.container}>
-      <TextInput
-        placeholder="Escribe algo..."
-        value={texto}
-        onChangeText={setTexto}
-        style={styles.input}
-      />
-      <Button title="Agregar" onPress={agregarItem} />
-      <FlatList
-        data={items}
-        keyExtractor={item => item._id}
-        renderItem={({ item }) => <Text style={styles.item}>{item.texto}</Text>}
-      />
-    </View>
+    <SQLiteProvider 
+    databaseName="Practica.db"
+    onInit={async (db) => {
+      await db.execAsync(
+        `CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          firstName TEXT NOT NULL,
+          lastName TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          phone TEXT NOT NULL
+        );
+        PRAGMA journal_mode=WAL;
+        `);
+      }}
+      options={{ useNewConnection: false }}
+    >
+      <UserForm />
+      <UserList />
+    </SQLiteProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, marginTop: 50 },
-  input: { borderWidth: 1, padding: 10, marginBottom: 10 },
-  item: { padding: 10, fontSize: 16, borderBottomWidth: 1 }
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#007AFF',
+    padding: 20,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#E3F2FD',
+  },
+  statsContainer: {
+    backgroundColor: '#fff',
+    margin: 10,
+    padding: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  statsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  completedNumber: {
+    color: '#28a745',
+  },
+  pendingNumber: {
+    color: '#ffc107',
+  },
+  rateNumber: {
+    color: '#007AFF',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  formContainer: {
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    fontSize: 16,
+  },
+  descriptionInput: {
+    height: 60,
+    textAlignVertical: 'top',
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  list: {
+    flex: 1,
+  },
+  taskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+    marginHorizontal: 10,
+    marginVertical: 2,
+    borderRadius: 8,
+  },
+  completedTask: {
+    backgroundColor: '#f0f0f0',
+  },
+  taskContent: {
+    flex: 1,
+  },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: '#666',
+  },
+  taskDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  taskDate: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  deleteButton: {
+    padding: 10,
+  },
+  deleteText: {
+    fontSize: 18,
+  },
 });
